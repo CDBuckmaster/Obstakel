@@ -11,6 +11,7 @@ import android.support.v4.app.FragmentManager;
 import android.content.Context;
 import android.location.*;
 import com.google.android.gms.maps.*;
+import com.google.android.gms.maps.GoogleMap.OnMarkerDragListener;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
@@ -24,6 +25,9 @@ public class MainActivity extends FragmentActivity {
 	private GoogleMap mMap;
 	private Marker exLocation;
 	private Marker userLocation;
+	private OnMarkerDragListener dragger;
+	private boolean dragged = false;
+	private LatLng markerLocation;
 	private LocationManager locationManager;
 	private LocationListener listener;
 	
@@ -53,28 +57,40 @@ public class MainActivity extends FragmentActivity {
             	{
             		currentBest = location;
             	}
+            	if(!dragged)
+            	{
+            	markerLocation = exLocation.getPosition();
             	mMap.clear();
-            	
+            	}
+            	else
+            	{
+            		userLocation.remove();
+            	}
             	userLocation = mMap.addMarker(new MarkerOptions()
     			.position(new LatLng(currentBest.getLatitude(), currentBest.getLongitude()))
     			.title("User")
     			.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
             	
-            	double accuracy = 0.0005;
-            	if(currentBest.getLatitude() <= exLocation.getPosition().latitude + accuracy && currentBest.getLatitude() >= exLocation.getPosition().latitude - accuracy &&
-            			currentBest.getLongitude() <= exLocation.getPosition().longitude + accuracy && currentBest.getLongitude() >= exLocation.getPosition().longitude - accuracy)
+            	if(!dragged)
             	{
-            		exLocation = mMap.addMarker(new MarkerOptions()
-        			.position(new LatLng(-27.46368,152.99762))
-        			.title("Other")
-        			.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
-            	}
-            	else
-            	{
-            		exLocation = mMap.addMarker(new MarkerOptions()
-        			.position(new LatLng(-27.46368,152.99762))
-        			.title("Other")
-        			.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+	            	double accuracy = 0.0005;
+	            	if(currentBest.getLatitude() <= exLocation.getPosition().latitude + accuracy && currentBest.getLatitude() >= exLocation.getPosition().latitude - accuracy &&
+	            			currentBest.getLongitude() <= exLocation.getPosition().longitude + accuracy && currentBest.getLongitude() >= exLocation.getPosition().longitude - accuracy)
+	            	{
+	            		exLocation = mMap.addMarker(new MarkerOptions()
+	        			.position(markerLocation)
+	        			.title("Ready")
+	        			.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE))
+	        			.draggable(true));
+	            	}
+	            	else
+	            	{
+	            		exLocation = mMap.addMarker(new MarkerOptions()
+	        			.position(markerLocation)
+	        			.title("Waiting")
+	        			.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
+	        			.draggable(true));
+	            	}
             	}
                 }
 
@@ -97,13 +113,49 @@ public class MainActivity extends FragmentActivity {
     		}
         };
         
-        List<String> providers = locationManager.getAllProviders();
-        for(String s : providers)
-        {
-        	Log.e(s, "derp");
-        	locationManager.requestLocationUpdates(s, 100, 0, listener);
-        }
+        dragger = new OnMarkerDragListener() {
+
+			@Override
+			public void onMarkerDrag(Marker arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void onMarkerDragEnd(Marker marker) {
+				dragged = false;
+				
+			}
+
+			@Override
+			public void onMarkerDragStart(Marker marker) {
+				dragged = true;
+				
+			}
+        	
+        };
         
+        mMap.setOnMarkerDragListener(dragger);
+        
+        Criteria criteria = new Criteria();
+        criteria.setAltitudeRequired(false);
+        criteria.setBearingRequired(false);
+        criteria.setCostAllowed(false);
+        criteria.setPowerRequirement(Criteria.POWER_LOW);      
+         
+        criteria.setAccuracy(Criteria.ACCURACY_FINE);
+        String providerFine = locationManager.getBestProvider(criteria, true);
+         
+        criteria.setAccuracy(Criteria.ACCURACY_COARSE);
+        String providerCoarse = locationManager.getBestProvider(criteria, true);
+        
+        if (providerCoarse != null) {
+        	Log.e("test" , "testes");
+            locationManager.requestLocationUpdates(providerCoarse, 100, 0, listener);
+        }
+        if (providerFine != null) {
+            locationManager.requestLocationUpdates(providerFine, 100, 0, listener);
+        }
         
     }
     
@@ -121,7 +173,8 @@ public class MainActivity extends FragmentActivity {
         	exLocation = mMap.addMarker(new MarkerOptions()
         			.position(new LatLng(-27.46368,152.99762))
         			.title("Other")
-        			.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+        			.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
+        			.draggable(true));
         	mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(-27.46368,152.99762), 15));
 
         }
