@@ -1,11 +1,1 @@
-The target API of the project is API 8 and above, which accounts for 85% of Android devices.
-
-Due to the way the maps v2 api works, you will need to name your android project "DECO3800" or create your own api key.
-
-Using the Android SDK Manager, got to Extras and install Android Support Library and Google Play Services.
-
-MainActivity.java is located in the src folder in your project.
-
-activity_main.xml is located in res/layout.
-
-AndroidManifest.xml is located in the top level of the project folder.
+Hello World!
